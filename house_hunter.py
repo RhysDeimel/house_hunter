@@ -30,11 +30,11 @@ class HouseType():
         self.some_other_param = None
         self.listing_results = []  # a list of objects that are successfull matches
 
-    def realestate_url():
+    def realestate_url(self):
         """Creates a url to use with realestate.com.au searches"""
         pass
 
-    def domain_url():
+    def domain_url(self):
         """Creates a url for domain.com.au searches"""
         pass
 
