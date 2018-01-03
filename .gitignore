@@ -1,2 +1,5 @@
 secrets.py
 venv/
+.cache/
+__pycache__/
+tests/__pycache__/
