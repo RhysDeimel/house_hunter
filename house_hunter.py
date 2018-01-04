@@ -13,6 +13,7 @@
 import googlemaps
 import secrets
 import urllib.parse
+import requests
 
 gmaps = googlemaps.Client(key=secrets.matrix_api_key)
 
@@ -39,6 +40,7 @@ class HouseType():
         self.car_spaces = car_spaces
         self.listing_results = []  # a list of objects that are successfull matches
 
+
     def realestate_url(self):
         """Creates a url to use with realestate.com.au searches"""
         url = "https://www.realestate.com.au/rent/property-townhouse-unit+apartment-house-between-0-1100-in-"
@@ -63,9 +65,16 @@ class HouseType():
 
     def domain_url(self):
         """Creates a url for domain.com.au searches"""
+        raise NotImplementedError
+
+    def get_page(self, url):
+        """Given a url, will return the HTML of a page"""
+        # use loop logic outside of a function, not here
+
+    def get_all_listings(self, html):
+        """Given html, will retun a list of all object listings """
+        # 20 to a page?
         pass
-
-
 
         
 
