@@ -12,6 +12,7 @@
 
 import googlemaps
 import secrets
+import urllib.parse
 
 gmaps = googlemaps.Client(key=secrets.matrix_api_key)
 
@@ -40,7 +41,25 @@ class HouseType():
 
     def realestate_url(self):
         """Creates a url to use with realestate.com.au searches"""
-        pass
+        url = "https://www.realestate.com.au/rent/property-townhouse-unit+apartment-house-between-0-1100-in-"
+        for i, item in enumerate(self.locations):
+            if not i:
+                loc = item.replace(' ', '+')
+                loc = urllib.parse.quote(loc, safe='+')
+                url += loc.lower()
+            else:
+                # wollstonecraft%2c+nsw+2065%3b+waverton%2c+nsw+2060%3b+
+                loc = item.replace(' ', '+')
+                loc = urllib.parse.quote(loc, safe='+')
+                url += "%3b+{}".format(loc.lower())
+
+            if len(self.locations) > 1 and i == len(self.locations) - 1:
+                url += "%3b+"
+
+        url += "/list-1?source=location-search"
+
+        return url
+
 
     def domain_url(self):
         """Creates a url for domain.com.au searches"""
