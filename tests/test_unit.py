@@ -1,6 +1,7 @@
 import pytest
 import house_hunter as hh
 
+
 class Test_realestate_url():
 
     def test_search_with_one_location(self):
@@ -12,7 +13,7 @@ class Test_realestate_url():
         assert prop.realestate_url() == expected
 
     def test_search_with_two_locations(self):
-        prop = hh.HouseType(locations=["Wollstonecraft, NSW 2065", 
+        prop = hh.HouseType(locations=["Wollstonecraft, NSW 2065",
                                        "Waverton, NSW 2060"],
                             property_type=["townhouse",
                                            "unit and apartment",
@@ -29,6 +30,14 @@ class Test_realestate_url():
                                            "house"])
         expected = "https://www.realestate.com.au/rent/property-townhouse-unit+apartment-house-between-0-1100-in-lavender+bay%2c+nsw+2060%3b+cremorne%2c+nsw+2090%3b+manly%2c+nsw+2095%3b+/list-1?source=location-search"
         assert prop.realestate_url() == expected
+
+    def test_get_all_listings_returns_20_items(self):
+        prop = hh.HouseType()
+
+        with open("tests/page1.html") as page:
+            given = prop.get_all_listings(page.read())
+
+        assert len(given) == 20
 
     # Time pressures, deal with this crap later
     #######################
