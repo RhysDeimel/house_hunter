@@ -16,7 +16,11 @@ import urllib.parse
 import requests
 import re
 import pprint
+import time
 from bs4 import BeautifulSoup
+
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 
 
@@ -155,73 +159,50 @@ class HouseType():
 
         return result['rows'][0]['elements'][0]['duration']['value']
 
-# {
-#    'destination_addresses':[
-#       'secret destination'
-#    ],
-#    'origin_addresses':[
-#       'secret origin'
-#    ],
-#    'rows':[
-#       {
-#          'elements':[
-#             {
-#                'distance':{
-#                   'text':'5.9 km',
-#                   'value':5918
-#                },
-#                'duration':{
-#                   'text':'26 mins',
-#                   'value':1568
-#                },
-#                'status':'OK'
-#             }
-#          ]
-#       }
-#    ],
-#    'status':'OK'
-# }
 
+def get_sheet():
+    scope = ['https://spreadsheets.google.com/feeds']
 
+    credentials = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+    for i in range(3):
+        # try:
+        client = gspread.authorize(credentials)
+        return client.open("PropertyHunt").sheet1
+        # except:
+            # time.sleep(5)
 
-#####################
-#
-#####################
-
-
-
-
-origin = 'the property address'
-nine_am = ''  # integer epoch timestamp of wednesday 9am. Needs time logic
-
-# call for Rhys
-
-# destination = secrets.rhys_work
-
-# result = gmaps.distance_matrix(origin,
-#                                destination,
-#                                mode='transit',
-#                                language='en-AU',
-#                                units='metric',
-#                                arrival_time=nine_am)
-
-# returns:
-# {'destination_addresses': ['secret destination'], 'origin_addresses': ['secret origin'], 'rows': [{'elements': [{'distance': {'text': '5.9 km', 'value': 5918}, 'duration': {'text': '26 mins', 'value': 1568}, 'status': 'OK'}]}], 'status': 'OK'}
-
-
-# call for Kristen
-
-# destination = secrets.kristen_work
-
-# result = gmaps.distance_matrix(origin,
-#                                destination,
-#                                mode='driving',
-#                                language='en-AU',
-#                                units='metric',
-#                                arrival_time=nine_am)
-
-# returns:
-# {'destination_addresses': ['secret destination'], 'origin_addresses': ['secret origin'], 'rows': [{'elements': [{'distance': {'text': '16.1 km', 'value': 16096}, 'duration': {'text': '19 mins', 'value': 1116}, 'status': 'OK'}]}], 'status': 'OK'}
+test_properties = [{'address': '4/75 Shirley Road, Wollstonecraft, NSW 2065',
+  'bath': 2,
+  'bed': 2,
+  'car': 1,
+  'distance_kristen': 882,
+  'distance_rhys': 1300,
+  'price': 665,
+  'url': '/property-unit-nsw-wollstonecraft-422816098'},
+ {'address': '7/33-37 Belmont Avenue, Wollstonecraft, NSW 2065',
+  'bath': 2,
+  'bed': 2,
+  'car': 1,
+  'distance_kristen': 911,
+  'distance_rhys': 1586,
+  'price': 720,
+  'url': '/property-apartment-nsw-wollstonecraft-422842170'},
+ {'address': '2A/26 Ross st, Wollstonecraft, NSW 2065',
+  'bath': 2,
+  'bed': 3,
+  'car': 2,
+  'distance_kristen': 1100,
+  'distance_rhys': 1256,
+  'price': 1020,
+  'url': '/property-apartment-nsw-wollstonecraft-422833718'},
+ {'address': '11/8-10 Morton Street, Wollstonecraft, NSW 2065',
+  'bath': 2,
+  'bed': 3,
+  'car': 2,
+  'distance_kristen': 955,
+  'distance_rhys': 1169,
+  'price': 1000,
+  'url': '/property-townhouse-nsw-wollstonecraft-422803890'}]
 
 #########
 # scraper stuff
@@ -232,10 +213,19 @@ nine_am = ''  # integer epoch timestamp of wednesday 9am. Needs time logic
 
 
 if __name__ == '__main__':
-    prop = HouseType(locations=suburb_list,
-                     property_type=["townhouse",
-                                    "house"])
-    url = prop.realestate_url()
-    prop.filter_listings(prop.get_all_listings(prop.get_page(url)))
-    pprint.pprint(prop.listing_results)
-    print(len(prop.listing_results))
+    # prop = HouseType(locations=suburb_list,
+    #                  property_type=["townhouse",
+    #                                 "house"])
+    # url = prop.realestate_url()
+    # prop.filter_listings(prop.get_all_listings(prop.get_page(url)))
+    # # pprint.pprint(prop.listing_results)
+    # # print(len(prop.listing_results))
+
+    gsheet = get_sheet()
+    values_list = gsheet.row_values(1)
+    print(values_list)
+
+# TODO:
+#   - impove the above and make it loop through pages until no
+#       more results on the page
+#   - Google sheet stuff
