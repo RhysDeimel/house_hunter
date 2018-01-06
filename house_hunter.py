@@ -15,6 +15,7 @@ import secrets
 import urllib.parse
 import requests
 import re
+import pprint
 from bs4 import BeautifulSoup
 
 
@@ -46,7 +47,7 @@ class HouseType():
 
     def realestate_url(self):
         """Creates a url to use with realestate.com.au searches"""
-        url = "https://www.realestate.com.au/rent/property-townhouse-unit+apartment-house-between-0-1100-in-"
+        url = "https://www.realestate.com.au/rent/property-townhouse-house-between-0-1100-in-"
         for i, item in enumerate(self.locations):
             if not i:
                 loc = item.replace(' ', '+')
@@ -128,14 +129,13 @@ class HouseType():
 
             listings.append(listing)
 
-        print(listings)
         return listings
 
     def filter_listings(self, listings):
         for item in listings:
             if item["price"] > 1100:
                 continue
-            elif item["bath"] == 1:
+            elif item["bath"] < 2:
                 continue
             # 60min for Kristen and I
             elif item["distance_kristen"] // 60 > 60:
@@ -237,4 +237,5 @@ if __name__ == '__main__':
                                     "house"])
     url = prop.realestate_url()
     prop.filter_listings(prop.get_all_listings(prop.get_page(url)))
-    print(prop.listing_results)
+    pprint.pprint(prop.listing_results)
+    print(len(prop.listing_results))
