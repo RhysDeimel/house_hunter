@@ -3,3 +3,5 @@ venv/
 .cache/
 __pycache__/
 tests/__pycache__/
+client_secret.json
+sheets.googleapis.com-python.json
