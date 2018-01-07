@@ -39,6 +39,43 @@ class Test_realestate_url():
 
         assert len(given) == 20
 
+
+
+
+test_properties = [
+{'address': '4/75 Shirley Road, Wollstonecraft, NSW 2065',
+  'bath': 2,
+  'bed': 2,
+  'car': 1,
+  'distance_kristen': 882,
+  'distance_rhys': 1300,
+  'price': 665,
+  'url': '/property-unit-nsw-wollstonecraft-422816098'},
+ {'address': '7/33-37 Belmont Avenue, Wollstonecraft, NSW 2065',
+  'bath': 2,
+  'bed': 2,
+  'car': 1,
+  'distance_kristen': 911,
+  'distance_rhys': 1586,
+  'price': 720,
+  'url': '/property-apartment-nsw-wollstonecraft-422842170'},
+ {'address': '2A/26 Ross st, Wollstonecraft, NSW 2065',
+  'bath': 2,
+  'bed': 3,
+  'car': 2,
+  'distance_kristen': 1100,
+  'distance_rhys': 1256,
+  'price': 1020,
+  'url': '/property-apartment-nsw-wollstonecraft-422833718'},
+ {'address': '11/8-10 Morton Street, Wollstonecraft, NSW 2065',
+  'bath': 2,
+  'bed': 3,
+  'car': 2,
+  'distance_kristen': 955,
+  'distance_rhys': 1169,
+  'price': 1000,
+  'url': '/property-townhouse-nsw-wollstonecraft-422803890'}]
+
     # Time pressures, deal with this crap later
     #######################
     # def test_HouseType_with_all_none(self):
