@@ -1,26 +1,11 @@
-# scrape a website
-
-# check details
-#    address
-#   price
-#   rooms
-#   distance to nearest trainstation
-
-# if match
-#    get pictures
-#    summarise
-
 import googlemaps
 import secrets
 import urllib.parse
 import requests
 import re
-import pprint
 import time
+import pygsheets
 from bs4 import BeautifulSoup
-
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 
 
@@ -58,7 +43,6 @@ class HouseType():
                 loc = urllib.parse.quote(loc, safe='+')
                 url += loc.lower()
             else:
-                # wollstonecraft%2c+nsw+2065%3b+waverton%2c+nsw+2060%3b+
                 loc = item.replace(' ', '+')
                 loc = urllib.parse.quote(loc, safe='+')
                 url += "%3b+{}".format(loc.lower())
@@ -66,7 +50,7 @@ class HouseType():
             if len(self.locations) > 1 and i == len(self.locations) - 1:
                 url += "%3b+"
 
-        url += "/list-1?source=location-search"
+        url += "/list-0?source=location-search"
 
         return url
 
@@ -82,7 +66,6 @@ class HouseType():
 
     def get_all_listings(self, html):
         """Given html, will retun a list of all object listings """
-        # 20 to a page?
         listings = []
         soup = BeautifulSoup(html, 'html.parser')
 
@@ -92,12 +75,11 @@ class HouseType():
 
             address = item.find("a")
 
-            # search in page listing[0]
-            price = item.find("p", class_="priceText")
-            price = price.text
-            pattern = re.compile("(\d,\d+)|(\d+)")
-            re_result = pattern.search(price)
             try:
+                price = item.find("p", class_="priceText")
+                price = price.text
+                pattern = re.compile("(\d,\d+)|(\d+)")
+                re_result = pattern.search(price)
                 price = re_result.group()
                 price = price.replace(",", "")
                 price = int(price)
@@ -113,13 +95,6 @@ class HouseType():
                 except IndexError:
                     details.append(0)
 
-            distance_kristen = self.check_distance(secrets.kristen_work,
-                                                   address.text,
-                                                   'driving')
-            distance_rhys = self.check_distance(secrets.rhys_work,
-                                                address.text,
-                                                'transit')
-
             listing = {
                 'address': address.text,
                 'price': price,
@@ -127,27 +102,39 @@ class HouseType():
                 'bath': details[1],
                 'car': details[2],
                 'url': address.get('href'),
-                'distance_kristen': distance_kristen,
-                'distance_rhys': distance_rhys
+                'distance_kristen': None,
+                'distance_rhys': None
             }
 
             listings.append(listing)
 
         return listings
 
-    def filter_listings(self, listings):
+    def filter_by_price_and_bath(self, listings):
+        print("Filtering listings by price and bathrooms")
+        filtered_list = []
+
         for item in listings:
-            if item["price"] > 1100:
+            if 0 < item["price"] > 1100:
                 continue
             elif item["bath"] < 2:
                 continue
-            # 60min for Kristen and I
-            elif item["distance_kristen"] // 60 > 60:
-                continue
-            elif item["distance_rhys"] // 60 > 60:
-                continue
             else:
-                self.listing_results.append(item)
+                filtered_list.append(item)
+
+        return filtered_list
+
+    def calculate_travel_time(self, listings):
+        for item in listings:
+            print("Calculating travel times for {}".format(item['address']))
+            item['distance_kristen'] = self.check_distance(secrets.kristen_work,
+                                                           item['address'],
+                                                           'driving')
+
+            item['distance_rhys'] = self.check_distance(secrets.rhys_work,
+                                                        item['address'],
+                                                        'transit')
+        return listings
 
     def check_distance(self, origin, destination, mode):
         result = self.gmaps.distance_matrix(origin,
@@ -156,76 +143,96 @@ class HouseType():
                                             language='en-AU',
                                             units='metric',
                                             arrival_time=self.nine_am)
+        try:
+            return result['rows'][0]['elements'][0]['duration']['value']
+        except KeyError:
+            return 0
 
-        return result['rows'][0]['elements'][0]['duration']['value']
+
+    def filter_times(self, listings):
+        print("Filtering listings by travel times")
+        filtered_list = []
+
+        for item in listings:
+            if item["distance_kristen"] // 60 > 60:
+                continue
+            elif item["distance_rhys"] // 60 > 60:
+                continue
+            else:
+                filtered_list.append(item)
+
+        return filtered_list
 
 
-def get_sheet():
-    scope = ['https://spreadsheets.google.com/feeds']
+    def get_sheet(self):
+        print("Getting google sheet")
+        gc = pygsheets.authorize()
+        sh = gc.open('PropertyHunt')
+        wks = sh.sheet1
+        return wks
 
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
-    for i in range(3):
-        # try:
-        client = gspread.authorize(credentials)
-        return client.open("PropertyHunt").sheet1
-        # except:
-            # time.sleep(5)
+    def filter_from_gsheet_entries(self, gsheet, listings):
+        print("Filtering listings from the google sheet")
+        filtered_list = []
+        previously_found_properties = gsheet.get_col(1, include_empty=False)
+        for item in listings:
+            if not item['address'] in previously_found_properties:
+                filtered_list.append(item)
 
-test_properties = [{'address': '4/75 Shirley Road, Wollstonecraft, NSW 2065',
-  'bath': 2,
-  'bed': 2,
-  'car': 1,
-  'distance_kristen': 882,
-  'distance_rhys': 1300,
-  'price': 665,
-  'url': '/property-unit-nsw-wollstonecraft-422816098'},
- {'address': '7/33-37 Belmont Avenue, Wollstonecraft, NSW 2065',
-  'bath': 2,
-  'bed': 2,
-  'car': 1,
-  'distance_kristen': 911,
-  'distance_rhys': 1586,
-  'price': 720,
-  'url': '/property-apartment-nsw-wollstonecraft-422842170'},
- {'address': '2A/26 Ross st, Wollstonecraft, NSW 2065',
-  'bath': 2,
-  'bed': 3,
-  'car': 2,
-  'distance_kristen': 1100,
-  'distance_rhys': 1256,
-  'price': 1020,
-  'url': '/property-apartment-nsw-wollstonecraft-422833718'},
- {'address': '11/8-10 Morton Street, Wollstonecraft, NSW 2065',
-  'bath': 2,
-  'bed': 3,
-  'car': 2,
-  'distance_kristen': 955,
-  'distance_rhys': 1169,
-  'price': 1000,
-  'url': '/property-townhouse-nsw-wollstonecraft-422803890'}]
+        return filtered_list
 
-#########
-# scraper stuff
-#########
+    def write_to_sheet(self, gsheet, listings):
+        listing_matrix = []
 
-# example url. Modify to include regions?
-# https://www.realestate.com.au/rent/property-townhouse-house-with-studio-between-0-1100-in-crows+nest%2c+nsw+2065%3b+wollstonecraft%2c+nsw+2065/list-1?numBaths=2&maxBeds=3&source=location-search
+        for item in listings:
+            print("Adding to matrix: {}".format(item['address']))
+            listing = []
+            listing.append(item['address'])
+            listing.append("${}".format(item['price']))
+            listing.append(item['bed'])
+            listing.append(item['bath'])
+            listing.append(item['car'])
+            listing.append("{} mins".format(item['distance_kristen'] // 60))
+            listing.append("{} mins".format(item['distance_rhys'] // 60))
+            listing.append("https://www.realestate.com.au{}".format(item['url']))
+            listing_matrix.append(listing)
+
+        if listing_matrix:
+            print("Batch updating sheet")
+            gsheet.insert_rows(1, number=len(listing_matrix), values=listing_matrix)
+        else:
+            print("Nothing to update")
 
 
 if __name__ == '__main__':
-    # prop = HouseType(locations=suburb_list,
-    #                  property_type=["townhouse",
-    #                                 "house"])
-    # url = prop.realestate_url()
-    # prop.filter_listings(prop.get_all_listings(prop.get_page(url)))
-    # # pprint.pprint(prop.listing_results)
-    # # print(len(prop.listing_results))
+    prop = HouseType(locations=suburb_list,
+                     property_type=["townhouse",
+                                    "house"])
+    url = prop.realestate_url()
+    
+    count = 0
+    listings = []
+    while True:
+        url = url.replace('list-{}'.format(count), 'list-{}'.format(count + 1))
 
-    gsheet = get_sheet()
-    values_list = gsheet.row_values(1)
-    print(values_list)
+        print("Getting page {}".format(count + 1))
+        page = prop.get_page(url)
+        print("Getting page {} listings".format(count + 1))
+        results = prop.get_all_listings(page)
 
-# TODO:
-#   - impove the above and make it loop through pages until no
-#       more results on the page
-#   - Google sheet stuff
+        if not results:
+            break
+        listings += results
+        count += 1
+        time.sleep(3)
+
+    feature_filtered = prop.filter_by_price_and_bath(listings)
+
+    gsheet = prop.get_sheet()
+    new_listings = prop.filter_from_gsheet_entries(gsheet, feature_filtered)
+
+    times_added = prop.calculate_travel_time(new_listings)
+    prop.listing_results = prop.filter_times(times_added)
+
+    prop.write_to_sheet(gsheet, prop.listing_results)
+    print("Finished!")
